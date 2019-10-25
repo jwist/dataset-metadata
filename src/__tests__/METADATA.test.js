@@ -1,6 +1,6 @@
 import { getClasses } from 'ml-dataset-iris';
 
-import { METADATA, sampleAClass } from '../METADATA.js';
+import { METADATA } from '../METADATA.js';
 
 const metadata = getClasses();
 
@@ -14,11 +14,19 @@ describe('metadata export and loading', () => {
   });
 });
 
-describe('metadata get', () => {
+describe('metadata sampleAClass', () => {
+  it('test export', () => {
+    let L = new METADATA([metadata], { headers: ['iris'] });
+    let dataset = L.get('iris', 'string');
+    expect(dataset).toHaveLength(150);
+  });
+});
+
+describe('metadata summary sample', () => {
   it('test get', () => {
     let L = new METADATA([metadata], { headers: ['iris'] });
-    expect(L.get('iris').nClass).toStrictEqual(3);
-    expect(typeof L.get('iris')).toStrictEqual('object');
+    expect(L.summary('iris').nClass).toStrictEqual(3);
+    expect(typeof L.summary('iris')).toStrictEqual('object');
   });
   it('test get sample', () => {
     let L = new METADATA([metadata], { headers: ['iris'] });
@@ -27,9 +35,9 @@ describe('metadata get', () => {
     let classVector = L.sample('iris').classVector;
     expect(testSet).toHaveLength(30);
     let newL = new METADATA([testSet.map((x) => classVector[x])], { headers: ['iris'] });
-    expect(newL.get('iris').nClass).toStrictEqual(3);
-    expect(newL.get('iris').groups.setosa).toStrictEqual(10);
-    expect(newL.get('iris').groups.virginica).toStrictEqual(10);
+    expect(newL.summary('iris').nClass).toStrictEqual(3);
+    expect(newL.summary('iris').groups.setosa).toStrictEqual(10);
+    expect(newL.summary('iris').groups.virginica).toStrictEqual(10);
   });
 });
 

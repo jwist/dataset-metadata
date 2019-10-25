@@ -1,4 +1,4 @@
-import Matrix from 'ml-matrix';
+// import Matrix from 'ml-matrix';
 
 /**
  * create new metadata object from 2D array
@@ -164,7 +164,14 @@ export class METADATA {
      * @param {String} title - a title
      * @return {Object} return { title, groupIDs, nClass, classVector, classFactor, classMatrix }
      */
-  get(header, format) {
+  get(header) {
+    let index = this.headers.indexOf(header);
+    let classVector = this.values[index];
+
+    return classVector;
+  }
+
+  summary(header) {
     let index = this.headers.indexOf(header);
     let classVector = this.values[index];
 
@@ -183,19 +190,9 @@ export class METADATA {
     }
     let groupIDs = Object.keys(counts);
     let nClass = groupIDs.length;
-    let classFactor = classVector.map((x) => groupIDs.indexOf(x));
-    let classMatrix = Matrix.from1DArray(nObs, 1, classFactor);
+    // let classFactor = classVector.map((x) => groupIDs.indexOf(x));
 
-    switch (format) {
-      case 'string':
-        return classVector;
-      case 'number':
-        return classMatrix;
-      case 'factor':
-        return classFactor;
-      default:
-        return { class: header, groups: counts, nObs, nClass };
-    }
+    return { class: header, groups: counts, nObs, nClass };
   }
 
   sample(header, options = {}) {
@@ -229,16 +226,14 @@ export function sampleAClass(classVector, fraction) {
   classVectorSorted.sort((a, b) => (a < b ? -1 : (b < a) | 0));
 
   // counts the class elements
-  // let counts = {};
-  // classVectorSorted.forEach((x) => counts[x] = (counts[x] || 0) + 1);
   let counts = summaryAClass(classVectorSorted);
+  console.log('counts', counts);
   // pick a few per class
   let indexOfSelected = [];
-
   Object.keys(counts).forEach((e, i) => {
     let shift = [];
     Object.values(counts).reduce((a, c, i) => shift[i] = a + c, 0);
-
+    console.log(shift);
     let arr = [...Array(counts[e]).keys()];
 
     let r = [];
