@@ -1,4 +1,4 @@
-// import Matrix from 'ml-matrix';
+import Matrix from 'ml-matrix';
 
 /**
  * create new metadata object from 2D array
@@ -9,8 +9,7 @@
  */
 export class METADATA {
   constructor(values, options = {}) {
-    let { columns,
-      rows } = [];
+    let { columns, rows } = [];
 
     if (values === true) {
       const metadata = options;
@@ -23,7 +22,7 @@ export class METADATA {
       this.values = values;
       let {
         headers = [...Array(columns).keys()].map((x) => (x + 1).toString()),
-        IDs = [...Array(rows).keys()].map((x) => (x + 1).toString())
+        IDs = [...Array(rows).keys()].map((x) => (x + 1).toString()),
       } = options;
 
       this.headers = headers;
@@ -62,27 +61,26 @@ export class METADATA {
   }
 
   /**
-     * listMetadata
-     * @return {Array} - an array with headers
-     */
+   * listMetadata
+   * @return {Array} - an array with headers
+   */
   list() {
     return this.headers;
   }
 
   /**
-     * add metadata
-     * @param {Array} value - an array with metadata
-     * @param {String} [by = 'column'] - select by row or by column
-     * @param {Object} [options]
-     * @param {String} [options.header] - a header for new metadata
-     */
+   * add metadata
+   * @param {Array} value - an array with metadata
+   * @param {String} [by = 'column'] - select by row or by column
+   * @param {Object} [options]
+   * @param {String} [options.header] - a header for new metadata
+   */
   append(values, by = 'column', options = {}) {
     if (by === 'column') {
-      let { header = (this.headers.length + 1)
-        .toString() } = options;
+      let { header = (this.headers.length + 1).toString() } = options;
 
-      if (typeof (header) !== 'string') {
-        console.warn('header was coerced to string');
+      if (typeof header !== 'string') {
+        // header was coerced to string
         header = header.toString();
       }
 
@@ -94,14 +92,13 @@ export class METADATA {
         this.values.push(values);
         this.headers.push(header);
       } else {
-        throw new Error('dimension doesn\'t match');
+        throw new Error("dimension doesn't match");
       }
     } else if (by === 'row') {
-      let { ID = (this.IDs.length + 1)
-        .toString() } = options;
+      let { ID = (this.IDs.length + 1).toString() } = options;
 
-      if (typeof (ID) !== 'string') {
-        console.warn('ID was coerced to string');
+      if (typeof ID !== 'string') {
+        // ID was coerced to string
         ID = ID.toString();
       }
 
@@ -113,7 +110,7 @@ export class METADATA {
         this.values.map((x, idx) => x.push(values[idx]));
         this.IDs.push(ID);
       } else {
-        throw new Error('dimension doesn\'t match');
+        throw new Error("dimension doesn't match");
       }
     }
 
@@ -131,7 +128,7 @@ export class METADATA {
     }
     if (by === 'column') {
       index.forEach((el, idx) => {
-        if (typeof (el) === 'number') {
+        if (typeof el === 'number') {
           index[idx] = this.headers[el];
         }
       });
@@ -160,51 +157,58 @@ export class METADATA {
   }
 
   /**
-     *
-     * @param {String} title - a title
-     * @return {Object} return { title, groupIDs, nClass, classVector, classFactor, classMatrix }
-     */
-  get(header) {
-    let index = this.headers.indexOf(header);
-    let classVector = this.values[index];
-
-    return classVector;
-  }
-
-  summary(header) {
+   *
+   * @param {String} title - a title
+   * @return {Object} return { title, groupIDs, nClass, classVector, classFactor, classMatrix }
+   */
+  get(header, options = {}) {
+    const { format = 'vector' } = options;
     let index = this.headers.indexOf(header);
     let classVector = this.values[index];
 
     let nObs = classVector.length;
-    let type = typeof (classVector[0]);
-    let counts = {};
-    switch (type) {
-      case 'string':
-        counts = summaryAClass(classVector);
-        break;
-      case 'number':
-        classVector = classVector.map((x) => x.toString());
-        counts = summaryAClass(classVector);
-        break;
-      default:
-    }
+    let counts = summaryAClass(classVector);
     let groupIDs = Object.keys(counts);
     let nClass = groupIDs.length;
-    // let classFactor = classVector.map((x) => groupIDs.indexOf(x));
 
-    return { class: header, groups: counts, nObs, nClass };
+    let classValues;
+    switch (format) {
+      case 'factor':
+        classValues = classVector.map((x) => groupIDs.indexOf(x));
+        break;
+      case 'matrix':
+        classValues = Matrix.from1DArray(
+          nObs,
+          1,
+          classVector.map((x) => groupIDs.indexOf(x)),
+        );
+        break;
+
+      default:
+        classValues = classVector;
+        break;
+    }
+
+    return {
+      header: header,
+      groups: groupIDs,
+      summary: counts,
+      nObs,
+      nClass,
+      values: classValues,
+    };
   }
 
   sample(header, options = {}) {
     const { fraction = 0.8 } = options;
-    let classVector = this.get(header, 'string');
+    let classVector = this.get(header).values;
     let { trainIndex, testIndex, mask } = sampleAClass(classVector, fraction);
 
     return {
       trainIndex,
       testIndex,
       mask,
-      classVector
+      classVector,
     };
   }
 }
@@ -220,24 +224,26 @@ export function summaryAClass(classVector) {
 export function sampleAClass(classVector, fraction) {
   // sort the vector
   let classVectorSorted = JSON.parse(JSON.stringify(classVector));
-  let result = Array.from(Array(classVectorSorted.length).keys())
-    .sort((a, b) => (classVectorSorted[a] < classVectorSorted[b] ? -1 :
-      (classVectorSorted[b] < classVectorSorted[a]) | 0));
+  let result = Array.from(Array(classVectorSorted.length).keys()).sort((a, b) =>
+    classVectorSorted[a] < classVectorSorted[b]
+      ? -1
+      : (classVectorSorted[b] < classVectorSorted[a]) | 0,
+  );
   classVectorSorted.sort((a, b) => (a < b ? -1 : (b < a) | 0));
 
   // counts the class elements
   let counts = summaryAClass(classVectorSorted);
-  console.log('counts', counts);
+
   // pick a few per class
   let indexOfSelected = [];
   Object.keys(counts).forEach((e, i) => {
     let shift = [];
-    Object.values(counts).reduce((a, c, i) => shift[i] = a + c, 0);
-    console.log(shift);
+    Object.values(counts).reduce((a, c, idx) => (shift[idx] = a + c), 0);
+
     let arr = [...Array(counts[e]).keys()];
 
     let r = [];
-    for (let i = 0; i < Math.floor(counts[e] * fraction); i++) {
+    for (let j = 0; j < Math.floor(counts[e] * fraction); j++) {
       let n = arr[Math.floor(Math.random() * arr.length)];
       r.push(n);
       let ind = arr.indexOf(n);
@@ -247,8 +253,7 @@ export function sampleAClass(classVector, fraction) {
     if (i === 0) {
       indexOfSelected = indexOfSelected.concat(r);
     } else {
-      indexOfSelected = indexOfSelected
-        .concat(r.map((x) => x + shift[i - 1]));
+      indexOfSelected = indexOfSelected.concat(r.map((x) => x + shift[i - 1]));
     }
   });
 
@@ -268,4 +273,3 @@ export function sampleAClass(classVector, fraction) {
   });
   return { trainIndex, testIndex, mask };
 }
-

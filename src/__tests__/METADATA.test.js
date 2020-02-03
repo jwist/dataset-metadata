@@ -1,6 +1,6 @@
 import { getClasses } from 'ml-dataset-iris';
 
-import { METADATA } from '../METADATA.js';
+import { METADATA, summaryAClass } from '../METADATA.js';
 
 const metadata = getClasses();
 
@@ -8,16 +8,30 @@ describe('metadata export and loading', () => {
   it('test export', () => {
     let L = new METADATA([metadata], { headers: ['iris'] });
     L = JSON.stringify(L.toJSON());
-    var newL = METADATA.load(JSON.parse(L));
+    let newL = METADATA.load(JSON.parse(L));
     expect(newL.list()[0]).toStrictEqual('iris');
     expect(newL.values[0]).toHaveLength(150);
+  });
+});
+
+describe('summaryAClass', () => {
+  it('test types for summaryAClass', () => {
+    let L = new METADATA([metadata], { headers: ['iris'] });
+    let values = L.get('iris').values;
+    expect(summaryAClass(values)).toStrictEqual({
+      setosa: 50,
+      versicolor: 50,
+      virginica: 50,
+    });
+    values = L.get('iris', { format: 'factor' }).values;
+    expect(summaryAClass(values)).toStrictEqual({ 0: 50, 1: 50, 2: 50 });
   });
 });
 
 describe('metadata sampleAClass', () => {
   it('test export', () => {
     let L = new METADATA([metadata], { headers: ['iris'] });
-    let dataset = L.get('iris', 'string');
+    let dataset = L.get('iris').values;
     expect(dataset).toHaveLength(150);
   });
 });
@@ -25,8 +39,8 @@ describe('metadata sampleAClass', () => {
 describe('metadata summary sample', () => {
   it('test get', () => {
     let L = new METADATA([metadata], { headers: ['iris'] });
-    expect(L.summary('iris').nClass).toStrictEqual(3);
-    expect(typeof L.summary('iris')).toStrictEqual('object');
+    expect(L.get('iris').nClass).toStrictEqual(3);
+    expect(typeof L.get('iris')).toStrictEqual('object');
   });
   it('test get sample', () => {
     let L = new METADATA([metadata], { headers: ['iris'] });
@@ -34,10 +48,13 @@ describe('metadata summary sample', () => {
     let testSet = L.sample('iris').testIndex;
     let classVector = L.sample('iris').classVector;
     expect(testSet).toHaveLength(30);
-    let newL = new METADATA([testSet.map((x) => classVector[x])], { headers: ['iris'] });
-    expect(newL.summary('iris').nClass).toStrictEqual(3);
-    expect(newL.summary('iris').groups.setosa).toStrictEqual(10);
-    expect(newL.summary('iris').groups.virginica).toStrictEqual(10);
+    let newL = new METADATA([testSet.map((x) => classVector[x])], {
+      headers: ['iris'],
+    });
+    expect(newL.get('iris').nClass).toStrictEqual(3);
+
+    expect(newL.get('iris').summary.setosa).toStrictEqual(10);
+    expect(newL.get('iris').summary.virginica).toStrictEqual(10);
   });
 });
 
@@ -53,7 +70,9 @@ describe('metadata creation, append and remove', () => {
     expect(L.list()[0]).toStrictEqual('iris');
   });
   it('test create 2 with headers', () => {
-    let L = new METADATA([metadata, metadata], { headers: ['iris', 'duplicate'] });
+    let L = new METADATA([metadata, metadata], {
+      headers: ['iris', 'duplicate'],
+    });
     expect(L.list()[1]).toStrictEqual('duplicate');
     expect(L.values).toHaveLength(2);
   });
@@ -72,8 +91,8 @@ describe('metadata creation, append and remove', () => {
   it('test add with wrong rows', () => {
     let L = new METADATA([metadata]);
     expect(() =>
-      L.append(metadata.splice(1, 2), 'column', { header: 'duplicated' }))
-      .toThrow('dimension doesn\'t match');
+      L.append(metadata.splice(1, 2), 'column', { header: 'duplicated' }),
+    ).toThrow("dimension doesn't match");
   });
   it('test add / remove row', () => {
     let L = new METADATA([metadata]);
@@ -109,13 +128,16 @@ describe('metadata creation, append and remove', () => {
   });
   it('test add / remove column with duplicate header', () => {
     let L = new METADATA([['1', '2', '3']]);
-    expect(() => L.append(['4', '5', '6'], 'column', { header: 1 }))
-      .toThrow('this header already exist');
+    expect(() => L.append(['4', '5', '6'], 'column', { header: 1 })).toThrow(
+      'this header already exist',
+    );
   });
   it('test add / remove row checks', () => {
     let L = new METADATA([['1', '2', '3']]);
     L.append(['4', '5', '6'], 'column', { header: 2 });
-    expect(() => L.append([6, 7], 'row', { ID: 2 })).toThrow('this ID already exist');
+    expect(() => L.append([6, 7], 'row', { ID: 2 })).toThrow(
+      'this ID already exist',
+    );
   });
   it('test remove row / column by id', () => {
     let L = new METADATA([['1', '2', '3']]);
@@ -139,4 +161,3 @@ describe('metadata creation, append and remove', () => {
     expect(L.values[0][0]).toStrictEqual('5');
   });
 });
-
