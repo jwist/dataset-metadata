@@ -6,7 +6,7 @@
 [![David deps][david-image]][david-url]
 [![npm download][download-image]][download-url]
 
-a class to manipulate metadata for dataset
+a class to manipulate metadata for statistical analysis
 
 ## Installation
 
@@ -14,10 +14,64 @@ a class to manipulate metadata for dataset
 
 ## [API Documentation](https://mljs.github.io/dataset-metadata/)
 
-## Example
+## Examples
 
+to import the package use
 ```js
-const datasetMetadata = require('dataset-metadata');
+const METADATA = require('dataset-metadata');
+```
+
+or 
+```js
+import { METADATA } from 'ml-dataset-metadata';
+```
+
+to create a metadata object use
+```js
+import { getClasses } from 'ml-dataset-iris';
+const metadata = getClasses();
+let L = new METADATA([metadata], { headers: ['iris'] });
+```
+this will create an array with the class of the famous iris dataset and create a METADATA object L.
+
+List all the available metadata
+```js
+L.list()
+```
+returns an array with all the metadata headers.
+
+Retrieve information (number of classes, counts for each classes) about a particular metadata using
+```js
+L.get('iris');
+```
+
+Retrieve values of a particular metadata as a Matrix object. This will coerce any string class into a Matrix of number with first class being "0", second being "1", etc.
+```js
+L.get('iris', { format: 'matrix' }).values
+```
+
+For supervised method it is usual to sample a class to get a training set and a test set.
+```js
+L.sample('iris')
+```
+returns an object with four arrays: trainIndex, testIndex, mask (a boolean filter), and classVector (the original class). 
+
+To append another metadata.
+```js
+let newMetadata = metadata;
+L.append(NewMetadata, 'column', { header: 'duplicated' });
+``` 
+
+To remove the duplicated metadata.
+```js
+L.remove('duplicated', 'column');
+```
+
+Import and export METADATA object.
+```js
+let L = new METADATA([metadata], { headers: ['iris'] });
+    L = JSON.stringify(L.toJSON());
+    let newL = METADATA.load(JSON.parse(L));
 ```
 
 ## License
